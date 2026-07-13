@@ -820,8 +820,7 @@ public menuRemove(id, iMenu)
     ArrayGetArray(g_aBarrier, g_ePlayerData[id][PDATA_BARRIER_MENU], eBarrier)
     menuNav(id, iMenu)
 
-    formatex(szItem, charsmax(szItem), "%L", id, "BARRIER_REMOVE_CURRENT",
-    g_szStatusColor[eBarrier[BARRIER_STATUS]])
+    formatex(szItem, charsmax(szItem), "%L", id, "BARRIER_REMOVE_CURRENT")
     menu_additem(iMenu, szItem)
 
     formatex(szItem, charsmax(szItem), "%L", id, "BARRIER_REMOVE_ALL")
@@ -1316,6 +1315,7 @@ stock loadDataBarrier(Float:fCorners[24], Float:fScale[3], Float:fOrigin[3], iFl
     set_pev(eBarrier[BARRIER_ID], pev_origin, fOrigin)
     barrierSetBox(eBarrier)
     barrierSetActive(eBarrier)
+    set_pev(eBarrier[BARRIER_ID], pev_solid, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? SOLID_BBOX : SOLID_NOT)
     ArraySetArray(g_aBarrier, iCount, eBarrier)
 }
 

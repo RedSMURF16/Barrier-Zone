@@ -43,7 +43,7 @@ BARRIER_STATUS_ALL_ENABLE               = Enable All Barrier Zones
 BARRIER_STATUS_ALL_DISABLE              = Disable All Barrier Zones
 BARRIER_STATUS_ALL_DEFAULT              = Reset-Status for all Barrier-Zones
 
-BARRIER_REMOVE_CURRENT                  = Remove Barrier Zone >> %s
+BARRIER_REMOVE_CURRENT                  = Remove Barrier Zone
 BARRIER_REMOVE_ALL                      = Remove All Barrier Zones
 
 BARRIER_SCALE_HEIGHT                    = %L Height
