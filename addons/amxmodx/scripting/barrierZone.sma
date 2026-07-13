@@ -89,13 +89,6 @@ enum
 
 enum
 {
-    STATUS_DEFAULT,
-    STATUS_FORCE_ENABLE,
-    STATUS_FORCE_DISABLE
-}
-
-enum
-{
     SOUND_MENU_NAV,
     SOUND_MENU_REMOVE,
     SOUND_MENU_ALERT
@@ -136,11 +129,6 @@ enum _:BARRIER
 {
     BARRIER_ID,
     BARRIER_FLAGS,
-    BARRIER_STATUS,
-    Float:BARRIER_ACTIVE_CHANCE,
-    Float:BARRIER_ACTIVE_DELAY[2],
-    Float:BARRIER_ACTIVE_DURATION[2],
-    Float:BARRIER_ACTIVE_COOLDOWN[2],
 
     Float:BARRIER_SCALE[3],
     Float:BARRIER_ORIGIN[3],
@@ -192,8 +180,7 @@ enum
 
     STATUS_CURRENT = 3,
     STATUS_ALL_ENABLE,
-    STATUS_ALL_DISABLE,
-    STATUS_ALL_DEFAULT
+    STATUS_ALL_DISABLE
 }
 
 enum
@@ -243,10 +230,6 @@ new Array:g_aBarrier,
     bool:g_bFileWasRead = false,
     g_iBarrier,
     g_iMaxPlayers
-
-new g_szStatus[][] = {"BARRIER_DEFAULT", "BARRIER_ENABLED", "BARRIER_DISABLED"}
-new g_szStatusChat[][] = {"BARRIER_CHAT_DEFAULT", "BARRIER_CHAT_ENABLED", "BARRIER_CHAT_DISABLED"}
-new g_szStatusColor[][] = {"\d", "\y", "\r"}
 
 public plugin_init()
 {
@@ -333,17 +316,21 @@ public eventRoundStart()
     for ( new i = 0; i < g_iBarrier; i ++ )
     {
         ArrayGetArray(g_aBarrier, i, eBarrier)
-
-        if ( eBarrier[BARRIER_STATUS] != STATUS_DEFAULT )
+        if ( !(eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE) )
             continue
 
         barrierReset(eBarrier)
-        if ( eBarrier[BARRIER_ACTIVE_CHANCE] >= random_float(0.0, 1.0) )
+        if ( g_eSettings[SETTING_DEFAULT_ACTIVE_CHANCE] >= random_float(0.0, 1.0) )
         {
             if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE_DELAY )
-                eBarrier[BARRIER_NEXT_ENABLE] = fCurrentTime + random_float(eBarrier[BARRIER_ACTIVE_DELAY][0], eBarrier[BARRIER_ACTIVE_DELAY][1])
+            {
+                eBarrier[BARRIER_NEXT_ENABLE] = fCurrentTime + random_float(g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][0], g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][1])
+            }
             else
+            {
                 eBarrier[BARRIER_FLAGS] |= FLAG_ACTIVE
+                set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_BBOX)
+            }
         }
 
         ArraySetArray(g_aBarrier, i, eBarrier)
@@ -668,16 +655,13 @@ public menuStatus(id, iMenu)
     ArrayGetArray(g_aBarrier, g_ePlayerData[id][PDATA_BARRIER_MENU], eBarrier)
 
     formatex(szItem, charsmax(szItem), "%L", id, "BARRIER_STATUS_CURRENT",
-    g_szStatusColor[eBarrier[BARRIER_STATUS]], id, g_szStatus[eBarrier[BARRIER_STATUS]])
+    eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? "\y" : "\r", id, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? "BARRIER_ENABLED" : "BARRIER_DISABLED")
     menu_additem(iMenu, szItem)
 
     formatex(szItem, charsmax(szItem), "%L", id, "BARRIER_STATUS_ALL_ENABLE")
     menu_additem(iMenu, szItem)
 
     formatex(szItem, charsmax(szItem), "%L", id, "BARRIER_STATUS_ALL_DISABLE")
-    menu_additem(iMenu, szItem)
-
-    formatex(szItem, charsmax(szItem), "%L", id, "BARRIER_STATUS_ALL_DEFAULT")
     menu_additem(iMenu, szItem)
 
     g_ePlayerData[id][PDATA_BARRIER_ACTION] = true
@@ -720,23 +704,11 @@ public menuHandlerStatus(id, menu, item)
         }
         case STATUS_CURRENT:
         {
-            if ( ++ eBarrier[BARRIER_STATUS] > STATUS_FORCE_DISABLE )
-                eBarrier[BARRIER_STATUS] = STATUS_DEFAULT
-
-            if ( eBarrier[BARRIER_STATUS] == STATUS_FORCE_ENABLE
-            || eBarrier[BARRIER_STATUS] == STATUS_DEFAULT )
-            {
-                eBarrier[BARRIER_FLAGS] |= FLAG_ACTIVE
-                set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_BBOX)
-            }
-            else if ( eBarrier[BARRIER_STATUS] == STATUS_FORCE_DISABLE )
-            {
-                eBarrier[BARRIER_FLAGS] &= ~FLAG_ACTIVE
-                set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_NOT)
-            }
+            eBarrier[BARRIER_FLAGS] ^= FLAG_ACTIVE
+            set_pev(eBarrier[BARRIER_ID], pev_solid, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? SOLID_BBOX : SOLID_NOT)
 
             client_print_color(id, id, "%L %L", id, "BARRIER_CHAT_TAG", id, "BARRIER_CHAT_STATUS_CURRENT",
-            id, g_szStatusChat[eBarrier[BARRIER_STATUS]])
+            id, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? "BARRIER_CHAT_ENABLED" : "BARRIER_CHAT_DISABLED")
             ArraySetArray(g_aBarrier, g_ePlayerData[id][PDATA_BARRIER_MENU], eBarrier)
 
             barrierSound(id, SOUND_MENU_NAV)
@@ -748,7 +720,6 @@ public menuHandlerStatus(id, menu, item)
             {
                 ArrayGetArray(g_aBarrier, i, eBarrier)
                 eBarrier[BARRIER_FLAGS] |= FLAG_ACTIVE
-                eBarrier[BARRIER_STATUS] = STATUS_FORCE_ENABLE
                 set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_BBOX)
 
                 ArraySetArray(g_aBarrier, i, eBarrier)
@@ -764,28 +735,12 @@ public menuHandlerStatus(id, menu, item)
             {
                 ArrayGetArray(g_aBarrier, i, eBarrier)
                 eBarrier[BARRIER_FLAGS] &= ~FLAG_ACTIVE
-                eBarrier[BARRIER_STATUS] = STATUS_FORCE_DISABLE
                 set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_NOT)
 
                 ArraySetArray(g_aBarrier, i, eBarrier)
             }
 
             client_print_color(id, id, "%L %L", id, "BARRIER_CHAT_TAG", id, "BARRIER_CHAT_STATUS_ALL_DISABLED")
-            barrierSound(id, SOUND_MENU_ALERT)
-            barrierMenu(id, MENU_STATUS)
-        }
-        case STATUS_ALL_DEFAULT:
-        {
-            for ( new i = 0; i < g_iBarrier; i ++ )
-            {
-                ArrayGetArray(g_aBarrier, i, eBarrier)
-                eBarrier[BARRIER_STATUS] = STATUS_DEFAULT
-                set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_BBOX)
-
-                ArraySetArray(g_aBarrier, i, eBarrier)
-            }
-
-            client_print_color(id, id, "%L %L", id, "BARRIER_CHAT_TAG", id, "BARRIER_CHAT_STATUS_ALL_DEFAULT")
             barrierSound(id, SOUND_MENU_ALERT)
             barrierMenu(id, MENU_STATUS)
         }
@@ -889,7 +844,7 @@ public menuHandlerRemove(id, menu, item)
             g_ePlayerData[id][PDATA_BARRIER_MENU] = 0
 
             barrierSound(id, SOUND_MENU_ALERT)
-            barrierMenu(id, MENU_REMOVE)
+            barrierMenu(id, MENU_ROOT)
         }
         case MENU_EXIT:
         {
@@ -1034,11 +989,11 @@ public menuHandlerScale(id, menu, item)
             g_ePlayerData[id][PDATA_BARRIER_ACTION] = false
 
             if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE_DELAY )
-                eBarrier[BARRIER_NEXT_ENABLE] = fCurrentTime + random_float(eBarrier[BARRIER_ACTIVE_DELAY][0], eBarrier[BARRIER_ACTIVE_DELAY][1])
+                eBarrier[BARRIER_NEXT_ENABLE] = fCurrentTime + random_float(g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][0], g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][1])
             else
                 eBarrier[BARRIER_FLAGS] |= FLAG_ACTIVE
 
-            barrierSetActive(eBarrier)
+            barrierSetActive(eBarrier, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? true : false)
             ArraySetArray(g_aBarrier, iItem, eBarrier)
 
             client_print_color(id, id, "%L %L", id, "BARRIER_CHAT_TAG", id, "BARRIER_CHAT_CREATE_NEW")
@@ -1104,7 +1059,7 @@ public barrierTask()
                 set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_NOT)
                 eBarrier[BARRIER_FLAGS] &= ~FLAG_ACTIVE
                 eBarrier[BARRIER_NEXT_DISABLE] = 0.0
-                eBarrier[BARRIER_NEXT_ENABLE] = fCurrentTime + random_float(eBarrier[BARRIER_ACTIVE_COOLDOWN][0], eBarrier[BARRIER_ACTIVE_COOLDOWN][1])
+                eBarrier[BARRIER_NEXT_ENABLE] = fCurrentTime + random_float(g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN][0], g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN][1])
 
                 ArraySetArray(g_aBarrier, i, eBarrier)
             }
@@ -1118,7 +1073,7 @@ public barrierTask()
                 eBarrier[BARRIER_FLAGS] |= FLAG_ACTIVE
                 eBarrier[BARRIER_NEXT_ENABLE] = 0.0
                 if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE_DURATION )
-                    eBarrier[BARRIER_NEXT_DISABLE] = fCurrentTime + random_float(eBarrier[BARRIER_ACTIVE_DURATION][0], eBarrier[BARRIER_ACTIVE_DURATION][1])
+                    eBarrier[BARRIER_NEXT_DISABLE] = fCurrentTime + random_float(g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][0], g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][1])
 
                 ArraySetArray(g_aBarrier, i, eBarrier)
             }
@@ -1190,11 +1145,8 @@ public saveData(id)
         formatex(szData, charsmax(szData), "[%d]^n", i)
         fputs(iFile, szData)
 
-        eBarrier[BARRIER_FLAGS] &= ~FLAG_SELECT
+        eBarrier[BARRIER_FLAGS] &= ~(FLAG_SELECT | FLAG_GHOST)
         formatex(szData, charsmax(szData), "flags = %d^n", eBarrier[BARRIER_FLAGS])
-        fputs(iFile, szData)
-
-        formatex(szData, charsmax(szData), "status = %d^n", eBarrier[BARRIER_STATUS])
         fputs(iFile, szData)
 
         formatex(szData, charsmax(szData), "scale = %.2f %.2f %.2f^n",
@@ -1225,7 +1177,7 @@ public loadData()
 {
     new szFile[128], iFile,
         szData[64], szKey[32], szValue[32],
-        iFlags, iStatus, Float:fScale[3], Float:fOrigin[3], Float:fCorners[24],
+        iFlags, Float:fScale[3], Float:fOrigin[3], Float:fCorners[24],
         iCorner, iCount = -1
 
     get_mapname(szFile, charsmax(szFile))
@@ -1242,7 +1194,7 @@ public loadData()
         if ( szData[0] == '[' )
         {
             if ( iCount != -1 )
-                loadDataBarrier(fCorners, fScale, fOrigin, iFlags, iStatus, iCount)
+                loadDataBarrier(fCorners, fScale, fOrigin, iFlags, iCount)
 
             iCount ++
         }
@@ -1255,10 +1207,6 @@ public loadData()
             if ( equal(szKey, "flags") )
             {
                 iFlags = str_to_num(szValue)
-            }
-            else if ( equal(szKey, "status") )
-            {
-                iStatus = str_to_num(szValue)
             }
             else if ( equal(szKey, "scale") )
             {
@@ -1293,20 +1241,19 @@ public loadData()
     }
 
     if ( iCount != -1 )
-        loadDataBarrier(fCorners, fScale, fOrigin, iFlags, iStatus, iCount)
+        loadDataBarrier(fCorners, fScale, fOrigin, iFlags, iCount)
 
     fclose(iFile)
     return PLUGIN_HANDLED
 }
 
-stock loadDataBarrier(Float:fCorners[24], Float:fScale[3], Float:fOrigin[3], iFlags, iStatus, iCount)
+stock loadDataBarrier(Float:fCorners[24], Float:fScale[3], Float:fOrigin[3], iFlags, iCount)
 {
     new eBarrier[BARRIER]
     barrierCreate(0)
     ArrayGetArray(g_aBarrier, iCount, eBarrier)
 
     eBarrier[BARRIER_FLAGS] = iFlags
-    eBarrier[BARRIER_STATUS] = iStatus
     xs_vec_copy(fScale, eBarrier[BARRIER_SCALE])
     xs_vec_copy(fOrigin, eBarrier[BARRIER_ORIGIN])
     for ( new i = 0; i < 24; i ++ )
@@ -1314,8 +1261,7 @@ stock loadDataBarrier(Float:fCorners[24], Float:fScale[3], Float:fOrigin[3], iFl
 
     set_pev(eBarrier[BARRIER_ID], pev_origin, fOrigin)
     barrierSetBox(eBarrier)
-    barrierSetActive(eBarrier)
-    set_pev(eBarrier[BARRIER_ID], pev_solid, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? SOLID_BBOX : SOLID_NOT)
+    barrierSetActive(eBarrier, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? true : false)
     ArraySetArray(g_aBarrier, iCount, eBarrier)
 }
 
@@ -1603,17 +1549,15 @@ stock barrierSetOffset(eBarrier[BARRIER])
     }
 }
 
-stock barrierSetActive(eBarrier[BARRIER])
+stock barrierSetActive(eBarrier[BARRIER], bool:bActive)
 {
-    set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_BBOX)
-    set_pev(eBarrier[BARRIER_ID], pev_movetype, MOVETYPE_NONE)
+    set_pev(eBarrier[BARRIER_ID], pev_solid, bActive ? SOLID_BBOX : SOLID_NOT)
     engfunc(EngFunc_SetSize, eBarrier[BARRIER_ID], eBarrier[BARRIER_MINS], eBarrier[BARRIER_MAXS])
 }
 
 stock barrierBeam(eBarrier[BARRIER])
 {
     new Float:fCorners[8][3]
-
     xs_vec_copy(eBarrier[BARRIER_CORNERS][0],  fCorners[0])
     xs_vec_copy(eBarrier[BARRIER_CORNERS][3],  fCorners[1])
     xs_vec_copy(eBarrier[BARRIER_CORNERS][6],  fCorners[2])
@@ -1679,7 +1623,7 @@ stock barrierReset(eBarrier[BARRIER])
     eBarrier[BARRIER_NEXT_ENABLE] = 0.0
 
     if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE_DURATION )
-        eBarrier[BARRIER_NEXT_DISABLE] = get_gametime() + random_float(eBarrier[BARRIER_ACTIVE_DURATION][0], eBarrier[BARRIER_ACTIVE_DURATION][1])
+        eBarrier[BARRIER_NEXT_DISABLE] = get_gametime() + random_float(g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][0], g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][1])
     else
         eBarrier[BARRIER_NEXT_DISABLE] = 0.0
 }
