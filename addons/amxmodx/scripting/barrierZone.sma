@@ -235,8 +235,8 @@ public plugin_init()
 {
     register_plugin("Barrier Zone", PLUGIN_VERSION, "RedSMURF")
 
-    register_clcmd("say /barrierzone",      "cmdMenu", ADMIN_RCON)
-    register_clcmd("say_team /barrierzone", "cmdMenu", ADMIN_RCON)
+    register_clcmd("say /barrierzone",      "cmdMenu", ADMIN_RCON, "-- Opens the Barrier Zone menu.")
+    register_clcmd("say_team /barrierzone", "cmdMenu", ADMIN_RCON, "-- Opens the Barrier Zone menu.")
     register_concmd("barrierzone_reload",   "cmdReload", ADMIN_RCON, "-- Reload the configuration file")
 
     register_dictionary("BarrierZone.txt")
@@ -286,23 +286,6 @@ public cmdReload(id, iLevel, iCmd)
     console_print(id, "The configuration file has been reloaded successfully !")
 
     return PLUGIN_HANDLED
-}
-
-public client_command(id)
-{
-    if ( !g_ePlayerData[id][PDATA_BARRIER_GHOST] )
-        return PLUGIN_CONTINUE
-
-    new szCmd[16]
-    read_argv(0, szCmd, charsmax(szCmd))
-
-    if ( contain(szCmd, "weapon_") != -1 ||
-    equal(szCmd, "invnext") ||
-    equal(szCmd, "invprev") ||
-    equal(szCmd, "lastinv") )
-        return PLUGIN_HANDLED
-
-    return PLUGIN_CONTINUE
 }
 
 public eventRoundStart()
@@ -488,11 +471,11 @@ public client_authorized(id)
 
 public client_disconnected(id)
 {
-    new iItem
+    new eBarrier[BARRIER], iItem
     if ( g_ePlayerData[id][PDATA_BARRIER_GHOST]
-    && (iItem = pev(g_ePlayerData[id][PDATA_BARRIER_GHOST], BARRIER_ARRAY_ITEM)) != -1 )
+    && (iItem = barrierGet(eBarrier, g_ePlayerData[id][PDATA_BARRIER_GHOST])) != -1 )
     {
-        barrierKill(g_ePlayerData[id][PDATA_BARRIER_GHOST])
+        barrierKill(eBarrier[BARRIER_ID])
         barrierRemove(iItem)
     }
 
