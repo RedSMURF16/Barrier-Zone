@@ -1,50 +1,53 @@
 [en] -- RedSMURF
-BARRIER_CHAT_TAG                        = ^4[BARRIER ZONE]^1
-BARRIER_CHAT_LIMIT                      = You've reached the maximum number of Barrier Zones ^4%d
-BARRIER_CHAT_NO_BARRIER                 = There are no Barrier Zones available
-BARRIER_CHAT_CREATE_NEW                 = ^3Barrier Zone ^1created
-BARRIER_CHAT_STATUS_CURRENT             = ^3Barrier Zone ^1is %L
-BARRIER_CHAT_STATUS_ALL_ENABLED         = All Barrier Zones are now enabled
-BARRIER_CHAT_STATUS_ALL_DISABLED        = All Barrier Zones are now disabled
-BARRIER_CHAT_REMOVE_CURRENT             = ^3Barrier Zone ^1removed
-BARRIER_CHAT_REMOVE_ALL                 = All Barrier Zones removed
-BARRIER_CHAT_SAVE                       = Barrier Zones data saved in ^4%s
+BARRIER_CHAT_TAG                                = ^4[BARRIER ZONE]^1
+BARRIER_CHAT_LIMIT                              = You've reached the maximum number of Barrier Zones ^4%d
+BARRIER_CHAT_NO_BARRIER                         = There are no Barrier Zones available
+BARRIER_CHAT_CREATE_NEW                         = ^3Barrier Zone ^1created
+BARRIER_CHAT_REMOVE_CURRENT                     = ^3Barrier Zone ^1removed
+BARRIER_CHAT_REMOVE_ALL                         = All Barrier Zones removed
+BARRIER_CHAT_SAVE                               = Barrier Zone data saved in ^4%s
+BARRIER_CHAT_STATUS_CURRENT                     = ^3Barrier Zone ^1is %L
+BARRIER_CHAT_STATUS_ALL_ENABLED                 = All Barrier Zones are now Enabled
+BARRIER_CHAT_STATUS_ALL_DISABLED                = All Barrier Zones are now Disabled
 
-BARRIER_CHAT_ENABLED                    = Enabled
-BARRIER_CHAT_DISABLED                   = Disabled
+BARRIER_CHAT_ENABLED                            = Enabled
+BARRIER_CHAT_DISABLED                           = Disabled
 
-BARRIER_NAV_NEXT                        = Next
-BARRIER_NAV_BACK                        = Back
-BARRIER_ADD                             = Add
-BARRIER_REMOVE                          = Remove
-BARRIER_ON                              = \y[ON]
-BARRIER_OFF                             = \r[OFF]
-BARRIER_ENABLED                         = \y[ENABLED]
-BARRIER_DISABLED                        = \r[DISABLED]
-BARRIER_INCREASE                        = \y[INCREASE]
-BARRIER_DECREASE                        = \r[DECREASE]
+BARRIER_NAV_NEXT                                = Next
+BARRIER_NAV_BACK                                = Back
+BARRIER_ADD                                     = Add
+BARRIER_REMOVE                                  = Remove
+BARRIER_ON                                      = \y[ON]
+BARRIER_OFF                                     = \r[OFF]
+BARRIER_ENABLED                                 = \y[ENABLED]
+BARRIER_DISABLED                                = \r[DISABLED]
+BARRIER_INCREASE                                = \y[INCREASE]
+BARRIER_DECREASE                                = \r[DECREASE]
 
-BARRIER_MENU_TITLE                      = \dBarrier Zone - Version \y%s
-BARRIER_MENU_TITLE_PAGE                 = \yPage:\r
+BARRIER_MENU_TITLE                              = \dBarrier Zone - Version \y%s
+BARRIER_MENU_TITLE_PAGE                         = \yPage:\r
 
-BARRIER_ROOT_CREATE                     = Create Barrier Zone
-BARRIER_ROOT_STATUS                     = Status Barrier Zone
-BARRIER_ROOT_REMOVE                     = Remove Barrier Zone
-BARRIER_ROOT_SAVE                       = Save Data
-BARRIER_ROOT_NOCLIP                     = Status noclip %L
-BARRIER_ROOT_GODMODE                    = Status godmode %L
-BARRIER_ROOT_SCALE                      = Adjust scaling
+BARRIER_ROOT_CREATE                             = Create Barrier Zone
+BARRIER_ROOT_EDIT                               = Edit Barrier Zone
+BARRIER_ROOT_REMOVE                             = Remove Barrier Zone
+BARRIER_ROOT_SAVE                               = Save Data
+BARRIER_ROOT_STATUS                             = Status Barrier Zone
+BARRIER_ROOT_NOCLIP                             = Status noclip %L
+BARRIER_ROOT_GODMODE                            = Status godmode %L
+BARRIER_ROOT_SCALE                              = Adjust scaling
 
-BARRIER_STATUS_CURRENT                  = Status Barrier Zone >> %s%L
-BARRIER_STATUS_ALL_ENABLE               = Enable All Barrier Zones
-BARRIER_STATUS_ALL_DISABLE              = Disable All Barrier Zones
+BARRIER_EDIT_STATUS                             = Edit Status
 
-BARRIER_REMOVE_CURRENT                  = Remove Barrier Zone
-BARRIER_REMOVE_ALL                      = Remove All Barrier Zones
+BARRIER_REMOVE_CURRENT                          = Remove Barrier Zone
+BARRIER_REMOVE_ALL                              = Remove All Barrier Zones
 
-BARRIER_SCALE_HEIGHT                    = %L Height
-BARRIER_SCALE_WIDTH                     = %L Width
-BARRIER_SCALE_DEPTH                     = %L Depth
-BARRIER_SCALE_FACTOR                    = Scale Factor >> %sx%.2f
-BARRIER_SCALE_MODE                      = Scale Mode >> %L
-BARRIER_SCALE_PLACE                     = Place Barrier Zone
+BARRIER_STATUS_CURRENT                          = Status Barrier Zone >> %L
+BARRIER_STATUS_ALL_ENABLE                       = Enable All Barrier Zones
+BARRIER_STATUS_ALL_DISABLE                      = Disable All Barrier Zones
+
+BARRIER_SCALE_HEIGHT                            = %L Height
+BARRIER_SCALE_WIDTH                             = %L Width
+BARRIER_SCALE_DEPTH                             = %L Depth
+BARRIER_SCALE_FACTOR                            = Scale Factor >> %sx%.2f
+BARRIER_SCALE_MODE                              = Scale Mode >> %L
+BARRIER_SCALE_PLACE                             = Place Barrier Zone
