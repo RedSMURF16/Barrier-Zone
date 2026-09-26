@@ -86,13 +86,9 @@ enum
 
 enum
 {
-    FLAG_ACTIVE_DELAY       = (1 << 0),
-    FLAG_ACTIVE_DURATION    = (1 << 1),
-
-    FLAG_GHOST              = (1 << 2),
-    FLAG_SELECT             = (1 << 3),
-    FLAG_ACTIVE             = (1 << 4),
-    FLAG_PENDING            = (1 << 5)
+    FLAG_GHOST              = (1 << 0),
+    FLAG_SELECT             = (1 << 1),
+    FLAG_ACTIVE             = (1 << 2)
 }
 
 enum
@@ -106,11 +102,6 @@ enum
 enum _:MAIN_SETTINGS
 {
     SETTING_DEFAULT_MODEL[MAX_RESOURCE_PATH_LENGTH],
-    SETTING_DEFAULT_FLAGS,
-    Float:SETTING_DEFAULT_SPAWN_CHANCE,
-    Float:SETTING_DEFAULT_ACTIVE_DELAY[2],
-    Float:SETTING_DEFAULT_ACTIVE_DURATION[2],
-    Float:SETTING_DEFAULT_ACTIVE_COOLDOWN[2],
     bool:SETTING_BARRIER_LOAD,
     Float:SETTING_BARRIER_CHECK,
     Float:SETTING_BARRIER_TASK,
@@ -120,6 +111,7 @@ enum _:MAIN_SETTINGS
     SETTING_GHOST_ALPHA,
     bool:SETTING_BARRIER_BLOCK_DAMAGE,
     bool:SETTING_BARRIER_BOUNCE_PROJECTILES,
+    Float:SETTING_BARRIER_BOUNCE_FACTOR[2],
 
     Float:SETTING_SIZE_BASE,
     Float:SETTING_SIZE_HEIGHT[2],
@@ -141,10 +133,7 @@ enum _:BARRIER
     Float:BARRIER_ORIGIN[3],
     Float:BARRIER_CORNERS[24],
     Float:BARRIER_MINS[3],
-    Float:BARRIER_MAXS[3],
-
-    Float:BARRIER_NEXT_ENABLE,
-    Float:BARRIER_NEXT_DISABLE
+    Float:BARRIER_MAXS[3]
 }
 
 enum _:PLAYER_DATA
@@ -284,14 +273,12 @@ public plugin_init()
     register_clcmd("say /barrierzone",      "cmdMenu", ADMIN_ACCESS, "-- Opens the Barrier Zone menu.")
     register_clcmd("say_team /barrierzone", "cmdMenu", ADMIN_ACCESS, "-- Opens the Barrier Zone menu.")
     register_concmd("barrierzone_reload",   "cmdReload", ADMIN_ACCESS, "-- Reload the configuration file")
-
     register_dictionary("BarrierZone.txt")
 
     g_iFwdTouch = RegisterHam(Ham_Touch, "info_target", "fwdTouch")
     g_iFwdTraceLine = register_forward(FM_TraceLine, "fwdTraceLine", 1)
     g_iFwdPreThink = RegisterHam(Ham_Player_PreThink, "player", "fwdPreThink")
     g_iFwdKilled = RegisterHam(Ham_Killed, "player", "fwdKilled", 1)
-    register_logevent("eventRoundStart", 2, "1=Round_Start")
     DisableForward()
     DisableBarrier()
 
@@ -328,34 +315,6 @@ public cmdReload(id, iLevel, iCmd)
 
     ReadFile()
     console_print(id, "The configuration file has been reloaded successfully !")
-
-    return PLUGIN_HANDLED
-}
-
-public eventRoundStart()
-{
-    if ( !g_iBarrier )
-        return PLUGIN_HANDLED
-
-    new eBarrier[BARRIER]
-    for ( new i = 0; i < g_iBarrier; i ++ )
-    {
-        ArrayGetArray(g_aBarrier, i, eBarrier)
-        if ( !(eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE) )
-            continue
-
-        barrierReset(eBarrier)
-        barrierSetState(eBarrier)
-        if ( g_eSettings[SETTING_DEFAULT_SPAWN_CHANCE] >= random_float(0.0, 1.0) )
-        {
-            eBarrier[BARRIER_FLAGS] |= FLAG_ACTIVE
-
-            barrierSetDelay(eBarrier)
-            barrierSetState(eBarrier)
-        }
-
-        ArraySetArray(g_aBarrier, i, eBarrier)
-    }
 
     return PLUGIN_HANDLED
 }
@@ -444,18 +403,8 @@ ReadFile()
                         trim(szKey)
                         trim(szValue)
 
-                        if ( equali(szKey, "SETTING_DEFAULT_MODEL") )
+                        if ( equali(szKey, "SETTING_DEFAULT_MODEL") && !g_bFileWasRead )
                             parseSetting(DTYPE_STRING_MODEL, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_MODEL], charsmax(g_eSettings[SETTING_DEFAULT_MODEL]))
-                        else if ( equali(szKey, "SETTING_DEFAULT_FLAGS") )
-                            parseSetting(DTYPE_FLAGS, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_FLAGS], charsmax(g_eSettings[SETTING_DEFAULT_FLAGS]))
-                        else if ( equali(szKey, "SETTING_DEFAULT_SPAWN_CHANCE") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_SPAWN_CHANCE], charsmax(g_eSettings[SETTING_DEFAULT_SPAWN_CHANCE]))
-                        else if ( equali(szKey, "SETTING_DEFAULT_ACTIVE_DELAY") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY], charsmax(g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY]))
-                        else if ( equali(szKey, "SETTING_DEFAULT_ACTIVE_DURATION") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION], charsmax(g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION]))
-                        else if ( equali(szKey, "SETTING_DEFAULT_ACTIVE_COOLDOWN") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN], charsmax(g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN]))
                         else if ( equali(szKey, "SETTING_BARRIER_LOAD") )
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_LOAD], charsmax(g_eSettings[SETTING_BARRIER_LOAD]))
                         else if ( equali(szKey, "SETTING_BARRIER_CHECK") )
@@ -474,6 +423,8 @@ ReadFile()
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_BLOCK_DAMAGE], charsmax(g_eSettings[SETTING_BARRIER_BLOCK_DAMAGE]))
                         else if ( equali(szKey, "SETTING_BARRIER_BOUNCE_PROJECTILES") )
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_BOUNCE_PROJECTILES], charsmax(g_eSettings[SETTING_BARRIER_BOUNCE_PROJECTILES]))
+                        else if ( equali(szKey, "SETTING_BARRIER_BOUNCE_FACTOR") )
+                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_BOUNCE_FACTOR], charsmax(g_eSettings[SETTING_BARRIER_BOUNCE_FACTOR]))
                         else if ( equali(szKey, "SETTING_SIZE_BASE") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_SIZE_BASE], charsmax(g_eSettings[SETTING_SIZE_BASE]))
                         else if ( equali(szKey, "SETTING_SIZE_HEIGHT") )
@@ -482,7 +433,7 @@ ReadFile()
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_SIZE_WIDTH], charsmax(g_eSettings[SETTING_SIZE_WIDTH]))
                         else if ( equali(szKey, "SETTING_SIZE_DEPTH") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_SIZE_DEPTH], charsmax(g_eSettings[SETTING_SIZE_DEPTH]))
-                        else if ( equali(szKey, "SETTING_BEAM") )
+                        else if ( equali(szKey, "SETTING_BEAM") && !g_bFileWasRead )
                             parseSetting(DTYPE_STRING_MODEL_ID, szValue, charsmax(szValue), g_eSettings[SETTING_BEAM], charsmax(g_eSettings[SETTING_BEAM]))
                         else if ( equali(szKey, "SETTING_BEAM_WIDTH") )
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_BEAM_WIDTH], charsmax(g_eSettings[SETTING_BEAM_WIDTH]))
@@ -492,6 +443,12 @@ ReadFile()
                 }
             }
         }
+    }
+
+    if ( g_bFileWasRead )
+    {
+        DisableBarrier()
+        EnableBarrier()
     }
 
     g_bFileWasRead = true
@@ -527,22 +484,6 @@ public barrierInit()
 {
     if ( g_eSettings[SETTING_BARRIER_LOAD] )
         set_task(DELAY_ON_LOAD, "loadData")
-}
-
-stock barrierTerminate()
-{
-    new eBarrier[BARRIER]
-    for ( new i = 0; i < g_iBarrier; i ++ )
-    {
-        ArrayGetArray(g_aBarrier, i, eBarrier)
-        eBarrier[BARRIER_FLAGS] &= ~(FLAG_GHOST | FLAG_SELECT)
-        if ( !(eBarrier[BARRIER_FLAGS] & FLAG_PENDING) )
-            continue
-
-        eBarrier[BARRIER_FLAGS] |= FLAG_ACTIVE
-        eBarrier[BARRIER_FLAGS] &= ~FLAG_PENDING
-        ArraySetArray(g_aBarrier, i, eBarrier)
-    }
 }
 
 stock barrierMenu(id, iType)
@@ -1054,7 +995,6 @@ public menuHandlerScale(id, menu, item)
             eBarrier[BARRIER_FLAGS] |= FLAG_ACTIVE
             barrierSetSeq(eBarrier[BARRIER_ID])
             barrierSetSize(eBarrier)
-            barrierSetDelay(eBarrier)
             barrierSetState(eBarrier)
             ArraySetArray(g_aBarrier, iItem, eBarrier)
 
@@ -1089,8 +1029,7 @@ public menuHandlerScale(id, menu, item)
 
 public barrierTask()
 {
-    new eBarrier[BARRIER], Float:fCurrentTime, bool:bModified
-    fCurrentTime = get_gametime()
+    new eBarrier[BARRIER]
     for ( new id = 1; id <= g_iMaxPlayers; id ++ )
     {
         if ( !is_user_alive(id) )
@@ -1110,42 +1049,8 @@ public barrierTask()
     for ( new i = 0; i < g_iBarrier; i ++ )
     {
         ArrayGetArray(g_aBarrier, i, eBarrier)
-
         if ( eBarrier[BARRIER_FLAGS] & FLAG_SELECT )
             barrierBeam(eBarrier)
-
-        if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE )
-        {
-            if ( eBarrier[BARRIER_NEXT_DISABLE] > 0.0
-            && fCurrentTime >= eBarrier[BARRIER_NEXT_DISABLE] )
-            {
-                eBarrier[BARRIER_FLAGS] &= ~FLAG_ACTIVE
-                eBarrier[BARRIER_FLAGS] |= FLAG_PENDING
-                eBarrier[BARRIER_NEXT_DISABLE] = 0.0
-                eBarrier[BARRIER_NEXT_ENABLE] = fCurrentTime + random_float(g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN][0], g_eSettings[SETTING_DEFAULT_ACTIVE_COOLDOWN][1])
-
-                barrierSetState(eBarrier)
-                bModified = true
-            }
-        }
-        else
-        {
-            if ( eBarrier[BARRIER_NEXT_ENABLE] > 0.0
-            && fCurrentTime >= eBarrier[BARRIER_NEXT_ENABLE] )
-            {
-                eBarrier[BARRIER_FLAGS] |= FLAG_ACTIVE
-                eBarrier[BARRIER_FLAGS] &= ~FLAG_PENDING
-                eBarrier[BARRIER_NEXT_ENABLE] = 0.0
-                if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE_DURATION )
-                    eBarrier[BARRIER_NEXT_DISABLE] = fCurrentTime + random_float(g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][0], g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][1])
-
-                barrierSetState(eBarrier)
-                bModified = true
-            }
-        }
-
-        if ( bModified )
-            ArraySetArray(g_aBarrier, i, eBarrier)
     }
 }
 
@@ -1364,7 +1269,6 @@ stock loadDataBarrier(iFlags, Float:fOrigin[3], Float:fScale[3], Float:fCorners[
     barrierSetSeq(eBarrier[BARRIER_ID])
     barrierSetBox(eBarrier)
     barrierSetSize(eBarrier)
-    barrierSetDelay(eBarrier)
     barrierSetState(eBarrier)
     ArraySetArray(g_aBarrier, iCount, eBarrier)
 }
@@ -1388,8 +1292,7 @@ public barrierGodMode(id)
 public fwdTouch(iEnt, iOther)
 {
     new eBarrier[BARRIER]
-    if ( !g_eSettings[SETTING_BARRIER_BLOCK_DAMAGE]
-    || isBarrier(iOther)
+    if ( isBarrier(iOther)
     || barrierGet(eBarrier, pev(iEnt, BARRIER_OWNER)) == -1
     || !(eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE) )
         return HAM_IGNORED
@@ -1421,6 +1324,7 @@ public fwdTouch(iEnt, iOther)
             break
 
         fVelocity[axis] *= -1.0
+        xs_vec_mul_scalar(fVelocity, random_float(g_eSettings[SETTING_BARRIER_BOUNCE_FACTOR][0], g_eSettings[SETTING_BARRIER_BOUNCE_FACTOR][1]), fVelocity)
         set_pev(iOther, pev_velocity, fVelocity)
         break
     }
@@ -1430,8 +1334,7 @@ public fwdTouch(iEnt, iOther)
 
 public fwdTraceLine(Float:fStart[3], Float:fEnd[3], iConditions, id, iTrace)
 {
-    if ( !g_eSettings[SETTING_BARRIER_BOUNCE_PROJECTILES]
-    || !is_user_alive(id) )
+    if ( !is_user_alive(id) )
         return FMRES_IGNORED
 
     new eBarrier[BARRIER], iBest = -1
@@ -1716,28 +1619,6 @@ stock barrierSetSize(eBarrier[BARRIER])
     barrierCreateTrigger(eBarrier)
 }
 
-stock barrierSetDelay(eBarrier[BARRIER])
-{
-    if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE )
-    {
-        new Float:fCurrentTime
-        fCurrentTime = get_gametime()
-
-        if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE_DELAY )
-        {
-            eBarrier[BARRIER_FLAGS] &= ~FLAG_ACTIVE
-            eBarrier[BARRIER_NEXT_ENABLE] = fCurrentTime + random_float(g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][0], g_eSettings[SETTING_DEFAULT_ACTIVE_DELAY][1])
-
-            barrierSetState(eBarrier)
-        }
-        else
-        {
-            if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE_DURATION )
-                eBarrier[BARRIER_NEXT_DISABLE] = fCurrentTime + random_float(g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][0], g_eSettings[SETTING_DEFAULT_ACTIVE_DURATION][1])
-        }
-    }
-}
-
 stock barrierSetState(eBarrier[BARRIER])
 {
     if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE )
@@ -1868,15 +1749,6 @@ stock beamDraw(Float:fStart[3], Float:fEnd[3], bool:bActive)
     write_byte(g_eSettings[SETTING_BEAM_ALPHA])
     write_byte(0)
     message_end()
-}
-
-stock barrierReset(eBarrier[BARRIER])
-{
-    eBarrier[BARRIER_FLAGS] &= ~FLAG_ACTIVE
-    eBarrier[BARRIER_NEXT_ENABLE] = 0.0
-    eBarrier[BARRIER_NEXT_DISABLE] = 0.0
-
-    barrierSetState(eBarrier)
 }
 
 stock barrierGet(eBarrier[BARRIER], iEnt)
@@ -2025,8 +1897,11 @@ stock DisableForward()
 
 stock EnableBarrier()
 {
-    EnableHamForward(g_iFwdTouch)
-    g_iFwdTraceLine = register_forward(FM_TraceLine, "fwdTraceLine", 1)
+    if ( g_eSettings[SETTING_BARRIER_BOUNCE_PROJECTILES] )
+        EnableHamForward(g_iFwdTouch)
+
+    if ( g_eSettings[SETTING_BARRIER_BLOCK_DAMAGE] )
+        g_iFwdTraceLine = register_forward(FM_TraceLine, "fwdTraceLine", 1)
 }
 
 stock DisableBarrier()
