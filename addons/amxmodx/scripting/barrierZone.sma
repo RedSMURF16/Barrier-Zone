@@ -677,7 +677,7 @@ public menuHandlerRemove(id, menu, item)
     ArrayGetArray(g_aBarrier, g_ePlayerData[id][PDATA_BARRIER_MENU], eBarrier)
     if ( !g_ePlayerData[id][PDATA_MENU_TRACE] )
     {
-        barrierSelect(eBarrier, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? TARGET_CLEAR : TARGET_GHOST)
+        barrierSelect(eBarrier, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? TARGET_HIDE : TARGET_GHOST)
         ArraySetArray(g_aBarrier, g_ePlayerData[id][PDATA_BARRIER_MENU], eBarrier)
     }
 
@@ -785,7 +785,7 @@ public menuHandlerStatus(id, menu, item)
     ArrayGetArray(g_aBarrier, g_ePlayerData[id][PDATA_BARRIER_MENU], eBarrier)
     if ( !g_ePlayerData[id][PDATA_MENU_TRACE] )
     {
-        barrierSelect(eBarrier, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? TARGET_CLEAR : TARGET_GHOST)
+        barrierSelect(eBarrier, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? TARGET_HIDE : TARGET_GHOST)
         ArraySetArray(g_aBarrier, g_ePlayerData[id][PDATA_BARRIER_MENU], eBarrier)
     }
 
@@ -1610,7 +1610,7 @@ stock barrierSetSeq(iEnt)
 
 stock barrierSetSize(eBarrier[BARRIER])
 {
-    barrierSelect(eBarrier, TARGET_CLEAR)
+    barrierSelect(eBarrier, TARGET_HIDE)
     engfunc(EngFunc_SetOrigin, eBarrier[BARRIER_ID], eBarrier[BARRIER_ORIGIN])
     set_pev(eBarrier[BARRIER_ID], pev_solid, eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE ? SOLID_BBOX : SOLID_NOT)
     set_pev(eBarrier[BARRIER_ID], pev_movetype, MOVETYPE_NONE)
@@ -1625,13 +1625,11 @@ stock barrierSetState(eBarrier[BARRIER])
     {
         set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_BBOX)
         set_pev(eBarrier[BARRIER_TRIGGER], pev_solid, SOLID_TRIGGER)
-        barrierSelect(eBarrier, TARGET_CLEAR)
     }
     else
     {
         set_pev(eBarrier[BARRIER_ID], pev_solid, SOLID_NOT)
         set_pev(eBarrier[BARRIER_TRIGGER], pev_solid, SOLID_NOT)
-        barrierSelect(eBarrier, TARGET_HIDE)
     }
 }
 
@@ -1655,13 +1653,13 @@ stock barrierSelect(eBarrier[BARRIER], iAction)
     {
         iRender = kRenderTransAlpha
         iRenderAmt = g_eSettings[SETTING_GHOST_ALPHA]
-
-        eBarrier[BARRIER_FLAGS] &= ~FLAG_SELECT
     }
     else if ( iAction == TARGET_HIDE )
     {
         iRender = kRenderTransAlpha
         iRenderAmt = 0
+
+        eBarrier[BARRIER_FLAGS] &= ~FLAG_SELECT
     }
     else if ( iAction == TARGET_CLEAR )
     {
@@ -1851,9 +1849,6 @@ stock EnableAction(id)
         for ( new i = 0; i < g_iBarrier; i ++ )
         {
             ArrayGetArray(g_aBarrier, i, eBarrier)
-            if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE )
-                continue
-
             barrierSelect(eBarrier, TARGET_GHOST)
         }
 
@@ -1871,10 +1866,8 @@ stock DisableAction(id)
         for ( new i = 0; i < g_iBarrier; i ++ )
         {
             ArrayGetArray(g_aBarrier, i, eBarrier)
-            if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE )
-                continue
-
             barrierSelect(eBarrier, TARGET_HIDE)
+            ArraySetArray(g_aBarrier, i, eBarrier)
         }
 
         g_ePlayerData[id][PDATA_BARRIER_ACTION] = false
