@@ -47,13 +47,13 @@
     #define MAX_PLATFORM_PATH_LENGTH 256
 #endif
 
-#define MIN_BOUNCE_VEL              40.0
 #define MAX_ENT                     32
 #define ADMIN_ACCESS                ADMIN_RCON
 #define BARRIER_KEY                 997755
 #define BARRIER_ARRAY_ITEM          pev_iuser1
 #define BARRIER_OWNER               pev_iuser1
 #define BARRIER_TRIGGER_FACTOR      1.125
+#define MIN_BOUNCE_VEL              40.0
 #define PDATA_NEXT_ATTACK           83
 #define XO_CBASEPLAYER              5
 #define XO_CBASEPLAYERWEAPON        4
@@ -61,10 +61,10 @@
 #define SOUND_REMOVE                "buttons/button10.wav"
 #define SOUND_ALERT                 "buttons/bell1.wav"
 
-new const PLUGIN_VERSION[]       = "1.0"
-new const Float:DELAY_ON_CONNECT = 1.0
+new const PLUGIN_VERSION[]          = "1.0"
+new const Float:DELAY_ON_CONNECT    = 1.0
 new const Float:DELAY_ON_LOAD       = 1.0
-new const ERROR_FILE[]           = "BarrierZone_ERRORS.log"
+new const ERROR_FILE[]              = "BarrierZone_ERRORS.log"
 
 enum
 {
@@ -463,8 +463,7 @@ public client_authorized(id)
 public client_disconnected(id)
 {
     new eBarrier[BARRIER], iItem
-    if ( g_ePlayerData[id][PDATA_BARRIER_GHOST]
-    && (iItem = barrierGet(eBarrier, g_ePlayerData[id][PDATA_BARRIER_GHOST])) != -1 )
+    if ( (iItem = barrierGet(eBarrier, g_ePlayerData[id][PDATA_BARRIER_GHOST])) != -1 )
     {
         barrierKill(eBarrier)
         barrierRemove(iItem)
@@ -484,6 +483,17 @@ public barrierInit()
 {
     if ( g_eSettings[SETTING_BARRIER_LOAD] )
         set_task(DELAY_ON_LOAD, "loadData")
+}
+
+stock barrierTerminate()
+{
+    new eBarrier[BARRIER]
+    for ( new i = 0; i < g_iBarrier; i ++ )
+    {
+        ArrayGetArray(g_aBarrier, i, eBarrier)
+        eBarrier[BARRIER_FLAGS] &= ~FLAG_SELECT
+        ArraySetArray(g_aBarrier, i, eBarrier)
+    }
 }
 
 stock barrierMenu(id, iType)
@@ -1146,6 +1156,7 @@ public saveData(id)
     if ( !iFile )
         return PLUGIN_HANDLED
 
+    barrierTerminate()
     for ( new i = 0; i < g_iBarrier; i ++ )
     {
         ArrayGetArray(g_aBarrier, i, eBarrier)
@@ -1427,7 +1438,7 @@ public fwdPreThink(id)
 public fwdKilled(id, iAttacker, bGib)
 {
     DisableAction(id)
-    g_ePlayerData[id][PDATA_BARRIER_MENU]   = 0
+    g_ePlayerData[id][PDATA_BARRIER_MENU] = 0
     if ( g_ePlayerData[id][PDATA_BARRIER_GHOST] )
     {
         new eBarrier[BARRIER], iItem
@@ -1751,6 +1762,9 @@ stock beamDraw(Float:fStart[3], Float:fEnd[3], bool:bActive)
 
 stock barrierGet(eBarrier[BARRIER], iEnt)
 {
+    if ( !isBarrier(iEnt) )
+        return -1
+
     new iItem
     iItem = pev(iEnt, BARRIER_ARRAY_ITEM)
     if ( iItem < 0 || iItem >= g_iBarrier )
