@@ -62,7 +62,6 @@
 #define SOUND_ALERT                 "buttons/bell1.wav"
 
 new const PLUGIN_VERSION[]          = "1.0"
-new const Float:DELAY_ON_CONNECT    = 1.0
 new const Float:DELAY_ON_LOAD       = 1.0
 new const ERROR_FILE[]              = "BarrierZone_ERRORS.log"
 
@@ -321,13 +320,6 @@ public cmdReload(id, iLevel, iCmd)
 
 ReadFile()
 {
-    if ( g_bFileWasRead )
-    {
-        for ( new id = 1; id <= g_iMaxPlayers; id ++ )
-            if ( is_user_connected(id))
-                UpdateData(id)
-    }
-
     new g_szFileName[MAX_RESOURCE_PATH_LENGTH]
     get_configsdir(g_szFileName, charsmax(g_szFileName))
     add(g_szFileName, charsmax(g_szFileName), "/BarrierZone.ini")
@@ -455,11 +447,6 @@ ReadFile()
     fclose(iFile)
 }
 
-public client_authorized(id)
-{
-    set_task(DELAY_ON_CONNECT, "UpdateData", id)
-}
-
 public client_disconnected(id)
 {
     new eBarrier[BARRIER], iItem
@@ -472,11 +459,6 @@ public client_disconnected(id)
     DisableAction(id)
     g_ePlayerData[id][PDATA_BARRIER_GHOST]  = 0
     g_ePlayerData[id][PDATA_BARRIER_MENU]   = 0
-}
-
-public UpdateData(id)
-{
-    g_ePlayerData[id][PDATA_OFFSET] = g_eSettings[SETTING_OFFSET_BASE]
 }
 
 public barrierInit()
