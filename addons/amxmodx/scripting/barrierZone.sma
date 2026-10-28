@@ -48,6 +48,12 @@
 #endif
 
 #define MAX_ENT                     32
+#define BARRIER_CHECK               10.0
+#define BARRIER_OFFSET_BASE         90.0
+#define BARRIER_OFFSET_MIN          42.0
+#define BARRIER_OFFSET_MAX          900.0
+#define BARRIER_OFFSET_STEP         10.0
+#define BARRIER_GHOST_ALPHA         128
 #define ADMIN_ACCESS                ADMIN_RCON
 #define BARRIER_KEY                 997755
 #define BARRIER_ARRAY_ITEM          pev_iuser1
@@ -102,12 +108,7 @@ enum _:MAIN_SETTINGS
 {
     SETTING_DEFAULT_MODEL[MAX_RESOURCE_PATH_LENGTH],
     bool:SETTING_BARRIER_LOAD,
-    Float:SETTING_BARRIER_CHECK,
     Float:SETTING_BARRIER_TASK,
-    Float:SETTING_OFFSET_BASE,
-    Float:SETTING_OFFSET[2],
-    Float:SETTING_OFFSET_STEP,
-    SETTING_GHOST_ALPHA,
     bool:SETTING_BARRIER_BLOCK_DAMAGE,
     bool:SETTING_BARRIER_BOUNCE_PROJECTILES,
     Float:SETTING_BARRIER_BOUNCE_FACTOR[2],
@@ -399,18 +400,8 @@ ReadFile()
                             parseSetting(DTYPE_STRING_MODEL, szValue, charsmax(szValue), g_eSettings[SETTING_DEFAULT_MODEL], charsmax(g_eSettings[SETTING_DEFAULT_MODEL]))
                         else if ( equali(szKey, "SETTING_BARRIER_LOAD") )
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_LOAD], charsmax(g_eSettings[SETTING_BARRIER_LOAD]))
-                        else if ( equali(szKey, "SETTING_BARRIER_CHECK") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_CHECK], charsmax(g_eSettings[SETTING_BARRIER_CHECK]))
                         else if ( equali(szKey, "SETTING_BARRIER_TASK") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_TASK], charsmax(g_eSettings[SETTING_BARRIER_TASK]))
-                        else if ( equali(szKey, "SETTING_OFFSET_BASE") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_OFFSET_BASE], charsmax(g_eSettings[SETTING_OFFSET_BASE]))
-                        else if ( equali(szKey, "SETTING_OFFSET") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_OFFSET], charsmax(g_eSettings[SETTING_OFFSET]))
-                        else if ( equali(szKey, "SETTING_OFFSET_STEP") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_OFFSET_STEP], charsmax(g_eSettings[SETTING_OFFSET_STEP]))
-                        else if ( equali(szKey, "SETTING_GHOST_ALPHA") )
-                            parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_GHOST_ALPHA], charsmax(g_eSettings[SETTING_GHOST_ALPHA]))
                         else if ( equali(szKey, "SETTING_BARRIER_BLOCK_DAMAGE") )
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_BLOCK_DAMAGE], charsmax(g_eSettings[SETTING_BARRIER_BLOCK_DAMAGE]))
                         else if ( equali(szKey, "SETTING_BARRIER_BOUNCE_PROJECTILES") )
@@ -1062,7 +1053,7 @@ public barrierCreate(id)
         g_ePlayerData[id][PDATA_BARRIER_ACTION] = true
         g_ePlayerData[id][PDATA_SCALE_UP] = true
         g_ePlayerData[id][PDATA_SCALE_FACTOR] = 0
-        g_ePlayerData[id][PDATA_OFFSET] = g_eSettings[SETTING_OFFSET_BASE]
+        g_ePlayerData[id][PDATA_OFFSET] = BARRIER_OFFSET_BASE
     }
 
     barrierSelect(eBarrier, TARGET_GHOST)
@@ -1397,14 +1388,14 @@ public fwdPreThink(id)
         {
             if ( iButton & IN_ATTACK )
             {
-                g_ePlayerData[id][PDATA_OFFSET]      += g_eSettings[SETTING_OFFSET_STEP]
-                g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], g_eSettings[SETTING_OFFSET][0], g_eSettings[SETTING_OFFSET][1])
+                g_ePlayerData[id][PDATA_OFFSET]      += BARRIER_OFFSET_STEP
+                g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], BARRIER_OFFSET_MIN, BARRIER_OFFSET_MAX)
                 g_ePlayerData[id][PDATA_NEXT_OFFSET] = fCurrentTime + 0.1
             }
             else if ( iButton & IN_ATTACK2 )
             {
-                g_ePlayerData[id][PDATA_OFFSET]      -= g_eSettings[SETTING_OFFSET_STEP]
-                g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], g_eSettings[SETTING_OFFSET][0], g_eSettings[SETTING_OFFSET][1])
+                g_ePlayerData[id][PDATA_OFFSET]      -= BARRIER_OFFSET_STEP
+                g_ePlayerData[id][PDATA_OFFSET]      = floatclamp(g_ePlayerData[id][PDATA_OFFSET], BARRIER_OFFSET_MIN, BARRIER_OFFSET_MAX)
                 g_ePlayerData[id][PDATA_NEXT_OFFSET] = fCurrentTime + 0.1
             }
         }
@@ -1472,7 +1463,7 @@ stock barrierCheck(id)
     global_get(glb_v_forward, fVec2)
 
     iBest = -1
-    fBestDist = g_eSettings[SETTING_BARRIER_CHECK]
+    fBestDist = BARRIER_CHECK
     for ( new i = 0; i < g_iBarrier; i ++ )
     {
         ArrayGetArray(g_aBarrier, i, eBarrier)
@@ -1645,7 +1636,7 @@ stock barrierSelect(eBarrier[BARRIER], iAction)
     else if ( iAction == TARGET_GHOST )
     {
         iRender = kRenderTransAlpha
-        iRenderAmt = g_eSettings[SETTING_GHOST_ALPHA]
+        iRenderAmt = BARRIER_GHOST_ALPHA
     }
     else if ( iAction == TARGET_HIDE )
     {
@@ -1906,3 +1897,8 @@ stock LogConfigError(const iLine, const szText[], any:...)
 
     log_to_file(ERROR_FILE, "^nLine %d: %s", iLine, szError)
 }
+
+
+
+
+
