@@ -20,7 +20,6 @@
 
 #include <amxmodx>
 #include <amxmisc>
-#include <cstrike>
 #include <fakemeta>
 #include <hamsandwich>
 #include <xs>
@@ -1037,7 +1036,7 @@ public barrierTask()
 
 public barrierCreate(id)
 {
-    new iEnt = cs_create_entity("info_target")
+    new iEnt = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
     if ( !pev_valid(iEnt) )
         return
 
@@ -1073,7 +1072,7 @@ public barrierCreate(id)
 
 stock barrierCreateTrigger(eBarrier[BARRIER])
 {
-    new iEnt = cs_create_entity("info_target")
+    new iEnt = engfunc(EngFunc_CreateNamedEntity, engfunc(EngFunc_AllocString, "info_target"))
     if (!pev_valid(iEnt))
         return
 
