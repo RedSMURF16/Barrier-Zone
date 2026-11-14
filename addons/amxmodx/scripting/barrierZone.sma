@@ -49,6 +49,15 @@
 #define BARRIER_OFFSET_BASE         90.0
 #define BARRIER_OFFSET_MIN          42.0
 #define BARRIER_OFFSET_MAX          900.0
+#define SIZE_BASE                   32.0
+#define SIZE_HEIGHT_MIN             5.0
+#define SIZE_HEIGHT_MAX             1500.0
+#define SIZE_WIDTH_MIN              5.0
+#define SIZE_WIDTH_MAX              1500.0
+#define SIZE_DEPTH_MIN              5.0
+#define SIZE_DEPTH_MAX              1500.0
+#define BEAM_WIDTH                  5
+#define BEAM_ALPHA                  255
 #define BARRIER_OFFSET_STEP         10.0
 #define BARRIER_GHOST_ALPHA         128
 #define ADMIN_ACCESS                ADMIN_RCON
@@ -60,12 +69,13 @@
 #define PDATA_NEXT_ATTACK           83
 #define XO_CBASEPLAYER              5
 #define XO_CBASEPLAYERWEAPON        4
+#define BEAM_SPRITE                 "sprites/white.spr"
 #define SOUND_NAV                   "buttons/blip1.wav"
 #define SOUND_REMOVE                "buttons/button10.wav"
 #define SOUND_ALERT                 "buttons/bell1.wav"
 
 new const PLUGIN_VERSION[]          = "1.0"
-new const Float:DELAY_ON_LOAD       = 1.0
+new const Float:DELAY_ON_LOAD       = 2.0
 new const ERROR_FILE[]              = "BarrierZone_ERRORS.log"
 
 enum
@@ -110,16 +120,7 @@ enum _:MAIN_SETTINGS
     Float:SETTING_BARRIER_TASK,
     bool:SETTING_BARRIER_BLOCK_DAMAGE,
     bool:SETTING_BARRIER_BOUNCE_PROJECTILES,
-    Float:SETTING_BARRIER_BOUNCE_FACTOR[2],
-
-    Float:SETTING_SIZE_BASE,
-    Float:SETTING_SIZE_HEIGHT[2],
-    Float:SETTING_SIZE_WIDTH[2],
-    Float:SETTING_SIZE_DEPTH[2],
-
-    SETTING_BEAM,
-    SETTING_BEAM_WIDTH,
-    SETTING_BEAM_ALPHA
+    Float:SETTING_BARRIER_BOUNCE_FACTOR[2]
 }
 
 enum _:BARRIER
@@ -259,7 +260,7 @@ new Array:g_aBarrier,
     g_ePlayerData[MAX_PLAYERS + 1][PLAYER_DATA],
     bool:g_bFileWasRead, g_iActivePlayers,
     g_iFwdTraceLine, HamHook:g_iFwdTouch, HamHook:g_iFwdPreThink, HamHook:g_iFwdKilled,
-    g_iBarrier,
+    g_iBarrier, g_iBeam,
     g_iMaxPlayers
 
 public plugin_init()
@@ -286,6 +287,7 @@ public plugin_init()
 public plugin_precache()
 {
     g_aBarrier = ArrayCreate(BARRIER)
+    g_iBeam = precache_model(BEAM_SPRITE)
 
     ReadFile()
 }
@@ -405,20 +407,6 @@ ReadFile()
                             parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_BOUNCE_PROJECTILES], charsmax(g_eSettings[SETTING_BARRIER_BOUNCE_PROJECTILES]))
                         else if ( equali(szKey, "SETTING_BARRIER_BOUNCE_FACTOR") )
                             parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_BARRIER_BOUNCE_FACTOR], charsmax(g_eSettings[SETTING_BARRIER_BOUNCE_FACTOR]))
-                        else if ( equali(szKey, "SETTING_SIZE_BASE") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_SIZE_BASE], charsmax(g_eSettings[SETTING_SIZE_BASE]))
-                        else if ( equali(szKey, "SETTING_SIZE_HEIGHT") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_SIZE_HEIGHT], charsmax(g_eSettings[SETTING_SIZE_HEIGHT]))
-                        else if ( equali(szKey, "SETTING_SIZE_WIDTH") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_SIZE_WIDTH], charsmax(g_eSettings[SETTING_SIZE_WIDTH]))
-                        else if ( equali(szKey, "SETTING_SIZE_DEPTH") )
-                            parseSetting(DTYPE_FLOAT, szValue, charsmax(szValue), g_eSettings[SETTING_SIZE_DEPTH], charsmax(g_eSettings[SETTING_SIZE_DEPTH]))
-                        else if ( equali(szKey, "SETTING_BEAM") && !g_bFileWasRead )
-                            parseSetting(DTYPE_STRING_MODEL_ID, szValue, charsmax(szValue), g_eSettings[SETTING_BEAM], charsmax(g_eSettings[SETTING_BEAM]))
-                        else if ( equali(szKey, "SETTING_BEAM_WIDTH") )
-                            parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_BEAM_WIDTH], charsmax(g_eSettings[SETTING_BEAM_WIDTH]))
-                        else if ( equali(szKey, "SETTING_BEAM_ALPHA") )
-                            parseSetting(DTYPE_INT, szValue, charsmax(szValue), g_eSettings[SETTING_BEAM_ALPHA], charsmax(g_eSettings[SETTING_BEAM_ALPHA]))
                     }
                 }
             }
@@ -897,14 +885,14 @@ public menuHandlerScale(id, menu, item)
             if ( g_ePlayerData[id][PDATA_SCALE_UP] )
             {
                 eBarrier[BARRIER_SCALE][2] += g_fScaleFactor[g_ePlayerData[id][PDATA_SCALE_FACTOR]]
-                if (eBarrier[BARRIER_SCALE][2] > g_eSettings[SETTING_SIZE_HEIGHT][1])
-                    eBarrier[BARRIER_SCALE][2] = g_eSettings[SETTING_SIZE_HEIGHT][1]
-            }
+                if ( eBarrier[BARRIER_SCALE][2] > SIZE_HEIGHT_MAX )
+                        eBarrier[BARRIER_SCALE][2] = SIZE_HEIGHT_MAX
+                }
             else
             {
                 eBarrier[BARRIER_SCALE][2] -= g_fScaleFactor[g_ePlayerData[id][PDATA_SCALE_FACTOR]]
-                if (eBarrier[BARRIER_SCALE][2] < g_eSettings[SETTING_SIZE_HEIGHT][0])
-                    eBarrier[BARRIER_SCALE][2] = g_eSettings[SETTING_SIZE_HEIGHT][0]
+                if ( eBarrier[BARRIER_SCALE][2] < SIZE_HEIGHT_MIN )
+                    eBarrier[BARRIER_SCALE][2] = SIZE_HEIGHT_MIN
             }
 
             ArraySetArray(g_aBarrier, iItem, eBarrier)
@@ -916,14 +904,14 @@ public menuHandlerScale(id, menu, item)
             if ( g_ePlayerData[id][PDATA_SCALE_UP] )
             {
                 eBarrier[BARRIER_SCALE][0] += g_fScaleFactor[g_ePlayerData[id][PDATA_SCALE_FACTOR]]
-                if (eBarrier[BARRIER_SCALE][0] > g_eSettings[SETTING_SIZE_WIDTH][1])
-                    eBarrier[BARRIER_SCALE][0] = g_eSettings[SETTING_SIZE_WIDTH][1]
+                if ( eBarrier[BARRIER_SCALE][0] > SIZE_WIDTH_MAX )
+                    eBarrier[BARRIER_SCALE][0] = SIZE_WIDTH_MAX
             }
             else
             {
                 eBarrier[BARRIER_SCALE][0] -= g_fScaleFactor[g_ePlayerData[id][PDATA_SCALE_FACTOR]]
-                if (eBarrier[BARRIER_SCALE][0] < g_eSettings[SETTING_SIZE_WIDTH][0])
-                    eBarrier[BARRIER_SCALE][0] = g_eSettings[SETTING_SIZE_WIDTH][0]
+                if ( eBarrier[BARRIER_SCALE][0] < SIZE_WIDTH_MIN )
+                    eBarrier[BARRIER_SCALE][0] = SIZE_WIDTH_MIN
             }
 
             ArraySetArray(g_aBarrier, iItem, eBarrier)
@@ -935,14 +923,14 @@ public menuHandlerScale(id, menu, item)
             if ( g_ePlayerData[id][PDATA_SCALE_UP] )
             {
                 eBarrier[BARRIER_SCALE][1] += g_fScaleFactor[g_ePlayerData[id][PDATA_SCALE_FACTOR]]
-                if (eBarrier[BARRIER_SCALE][1] > g_eSettings[SETTING_SIZE_DEPTH][1])
-                    eBarrier[BARRIER_SCALE][1] = g_eSettings[SETTING_SIZE_DEPTH][1]
+                if ( eBarrier[BARRIER_SCALE][1] > SIZE_DEPTH_MAX )
+                    eBarrier[BARRIER_SCALE][1] = SIZE_DEPTH_MAX
             }
             else
             {
                 eBarrier[BARRIER_SCALE][1] -= g_fScaleFactor[g_ePlayerData[id][PDATA_SCALE_FACTOR]]
-                if (eBarrier[BARRIER_SCALE][1] < g_eSettings[SETTING_SIZE_DEPTH][0])
-                    eBarrier[BARRIER_SCALE][1] = g_eSettings[SETTING_SIZE_DEPTH][0]
+                if ( eBarrier[BARRIER_SCALE][1] < SIZE_DEPTH_MIN )
+                    eBarrier[BARRIER_SCALE][1] = SIZE_DEPTH_MIN
             }
 
             ArraySetArray(g_aBarrier, iItem, eBarrier)
@@ -1042,7 +1030,7 @@ public barrierCreate(id)
 
     new eBarrier[BARRIER]
     eBarrier[BARRIER_ID] = iEnt
-    eBarrier[BARRIER_SCALE][0] = eBarrier[BARRIER_SCALE][1] = eBarrier[BARRIER_SCALE][2] = g_eSettings[SETTING_SIZE_BASE]
+    eBarrier[BARRIER_SCALE][0] = eBarrier[BARRIER_SCALE][1] = eBarrier[BARRIER_SCALE][2] = SIZE_BASE
     if ( id )
     {
         EnableAction(id)
@@ -1621,7 +1609,7 @@ stock barrierSelect(eBarrier[BARRIER], iAction)
     iRenderFx = kRenderFxNone
     if ( iAction == TARGET_SELECT )
     {
-        if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE )    { iRenderColor[0] = 0;      iRenderColor[1] = 255;     iRenderColor[2] = 0; }
+        if ( eBarrier[BARRIER_FLAGS] & FLAG_ACTIVE )    { iRenderColor[0] = 0;      iRenderColor[1] = 255; iRenderColor[2] = 0; }
         else                                            { iRenderColor[0] = 255;    iRenderColor[1] = 0;   iRenderColor[2] = 0; }
 
         iRender = kRenderTransColor
@@ -1707,11 +1695,11 @@ stock beamDraw(Float:fStart[3], Float:fEnd[3], bool:bActive)
     write_coord_f(fEnd[0])
     write_coord_f(fEnd[1])
     write_coord_f(fEnd[2])
-    write_short(g_eSettings[SETTING_BEAM])
+    write_short(g_iBeam)
     write_byte(0)
     write_byte(0)
     write_byte(1)
-    write_byte(g_eSettings[SETTING_BEAM_WIDTH])
+    write_byte(BEAM_WIDTH)
     write_byte(0)
     if ( bActive )
     {
@@ -1725,7 +1713,7 @@ stock beamDraw(Float:fStart[3], Float:fEnd[3], bool:bActive)
         write_byte(0)
         write_byte(0)
     }
-    write_byte(g_eSettings[SETTING_BEAM_ALPHA])
+    write_byte(BEAM_ALPHA)
     write_byte(0)
     message_end()
 }
