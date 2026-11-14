@@ -1,6 +1,10 @@
 <h1 align="center">Barrier Zone</h1>
 
-## Description
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=RXxDzok3cD0"><img src="https://img.youtube.com/vi/RXxDzok3cD0/maxresdefault.jpg" alt="Watch on YouTube" width="600"></a>
+</p>
+
+## 📝 Description
 This plugin adds fully dynamic barrier zones to Counter-Strike 1.6.
 Barrier zones can be placed, managed and configured during gameplay to block off paths, chokepoints, and areas of the map with full runtime control over activation states.
 Custom setups are saved per map and automatically loaded on every map start.
@@ -11,12 +15,12 @@ Custom setups are saved per map and automatically loaded on every map start.
 - Intuitive ghost preview and sizing tools for natural placement along any surface
 - [color=red]Requires AMX Mod X 1.9.0+[/color]
 
-## Commands
+## 💬 Commands
 - `say /barrierzone` - Opens the Barrier Zone menu.
 - `say_team /barrierzone` - Opens the Barrier Zone menu.
 - `barrierzone_reload` - Reloads the configuration file.
 
-## Configuration
+## ⚙️ Configuration
 ```ini
 # [Main Settings]
 # SETTING_DEFAULT_MODEL           = Default barrier zone model path
@@ -32,9 +36,7 @@ Custom setups are saved per map and automatically loaded on every map start.
 # SETTING_DEFAULT_ICON_SPRITE     = Default radar icon sprite path
 ```
 
-## Changelog
+## 🔄 Changelog
 ```text
 * v1.0: Initial release.
 ```
-
-[![Watch on YouTube](https://img.shields.io/badge/YouTube-Watch%20Preview-red?logo=youtube)](https://www.youtube.com/watch?v=RXxDzok3cD0)
