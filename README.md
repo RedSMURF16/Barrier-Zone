@@ -13,7 +13,10 @@ Custom setups are saved per map and automatically loaded on every map start.
 - Delayed and timed activation with random ranges for round-based gameplay
 - Visible radar icon and active/inactive color states for clear player feedback
 - Intuitive ghost preview and sizing tools for natural placement along any surface
-- [color=red]Requires AMX Mod X 1.9.0+[/color]
+
+## 📋 Requirements
+- ReGameDLL
+- AMX Mod X 1.10+
 
 ## 💬 Commands
 - `say /barrierzone` - Opens the Barrier Zone menu.
