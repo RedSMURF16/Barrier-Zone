@@ -1,7 +1,7 @@
 <h1 align="center">Barrier Zone</h1>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=RXxDzok3cD0"><img src="https://img.youtube.com/vi/RXxDzok3cD0/maxresdefault.jpg" alt="Watch on YouTube" width="600"></a>
+  <img src="images/demo.gif" alt="Barrier Zone">
 </p>
 
 ## 📝 Description
